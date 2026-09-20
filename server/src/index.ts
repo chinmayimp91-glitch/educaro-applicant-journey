@@ -1,0 +1,20 @@
+import "dotenv/config";
+import cors from "cors";
+import express from "express";
+import multer from "multer";
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+import { assessApplicant } from "./services/assessment.js";
+import { makeCvMarkdown } from "./services/cv.js";
+import { applicants, documentCounts } from "./services/store.js";
+
+const app = express(); const upload = multer({ storage: multer.memoryStorage(), limits:{ fileSize:10 * 1024 * 1024 } });
+app.use(cors()); app.use(express.json());
+const schema = z.object({ name:z.string().min(1), email:z.string().email(), location:z.string().optional(), goal:z.enum(["Study in Germany","Vocational training (Ausbildung)","Employment in Germany"]), german:z.string().optional(), education:z.string().optional(), experience:z.string().optional(), motivation:z.string().optional() });
+app.get("/api/health", (_req,res) => res.json({ok:true, storage:"memory (use database/schema.sql for PostgreSQL)"}));
+app.post("/api/applicants", (req,res) => { const parsed=schema.safeParse(req.body); if(!parsed.success) return res.status(400).json({error:parsed.error.flatten()}); const id=randomUUID(); applicants.set(id,{id,...parsed.data}); documentCounts.set(id,0); res.status(201).json({id}); });
+app.post("/api/applicants/:id/documents", upload.array("documents", 8), (req,res) => { if(!applicants.has(req.params.id)) return res.sendStatus(404); const files=req.files as Express.Multer.File[]; documentCounts.set(req.params.id,(documentCounts.get(req.params.id) || 0)+files.length); res.status(201).json({uploaded:files.map(f=>({name:f.originalname,status:"queued_for_extraction"}))}); });
+app.post("/api/applicants/:id/video", upload.single("video"), (req,res) => { if(!applicants.has(req.params.id)) return res.sendStatus(404); if(!req.file) return res.status(400).json({error:"video is required"}); res.status(201).json({status:"queued_for_human_or_AI_review", filename:req.file.originalname}); });
+app.post("/api/applicants/:id/assess", (req,res) => { const a=applicants.get(req.params.id); if(!a) return res.sendStatus(404); res.json(assessApplicant(a,documentCounts.get(a.id) || 0)); });
+app.get("/api/applicants/:id/cv", (req,res) => { const a=applicants.get(req.params.id); if(!a) return res.sendStatus(404); res.type("text/markdown").send(makeCvMarkdown(a)); });
+app.listen(Number(process.env.PORT || 3001), () => console.log("API listening on http://localhost:3001"));
