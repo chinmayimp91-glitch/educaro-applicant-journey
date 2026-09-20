@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "preview": "vite preview" },
+  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "preview": "vite preview", "dev:api": "npm --prefix server run dev", "build:api": "npm --prefix server run build" },
   "dependencies": { "@vitejs/plugin-react": "latest", "vite": "latest", "react": "latest", "react-dom": "latest" },
   "devDependencies": { "typescript": "latest", "@types/react": "latest", "@types/react-dom": "latest" }
 }
