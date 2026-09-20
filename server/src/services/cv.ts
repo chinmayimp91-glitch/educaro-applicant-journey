@@ -1,0 +1,2 @@
+import type { Applicant } from "../types.js";
+export function makeCvMarkdown(a: Applicant) { return `# ${a.name}\n\n## Contact\n${a.email}${a.location ? ` · ${a.location}` : ""}\n\n## Target\n${a.goal}\n\n## Education\n${a.education || "To be verified"}\n\n## Experience\n${a.experience || "To be verified"}\n\n## Languages\nGerman: ${a.german || "To be verified"}\n\n## Motivation\n${a.motivation || "To be verified"}\n\n*Generated from applicant-provided information. Verify before use.*\n`; }
